@@ -1,6 +1,6 @@
 # mc-chunk-parser
 
-Version-aware Minecraft chunk parser in Python. Existing Python libraries for chunk parsing are outdated or unmaintained - this bridges that gap. Decodes binary chunk payloads into queryable block state data via NBT parsing, palette resolution, and heightmap extraction.
+Version-aware Minecraft chunk parser in Python. Existing Python libraries for chunk parsing are outdated or unmaintained,  this bridges that gap. Decodes binary chunk payloads into queryable block state data via NBT parsing, palette resolution, and heightmap extraction.
 
 Written from scratch with no external dependencies beyond the Python standard library.
 
