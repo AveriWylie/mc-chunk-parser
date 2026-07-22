@@ -20,7 +20,7 @@ TAG_LONG_ARRAY = 12
 
 """
 --------------------------------------------------------------------------------------------
-Chunk Parser
+Chunk Parser - Documented slightly differently as this is it's own repo as well.
 --------------------------------------------------------------------------------------------
 Parses Minecraft chunk data packets into queryable block state data. Single public
 interface is get_block(x, y, z) which returns the block type at a given coordinate.
@@ -32,8 +32,6 @@ runtime. And _read_varint and _varint_size are separate from Connection._encode_
 because here you're reading from a buffer not a socket, same algorithm, different context.
 --------------------------------------------------------------------------------------------
 """
-
-
 class Chunk:
     _state_to_block_cache = {}
 
@@ -75,10 +73,9 @@ class Chunk:
     """
 
     def _parse(self, payload):
-        hmap, offset = self._read_nbt(payload, 0)
         # need hmap, example "find a tree" benefits from knowing the surface Y so
         # you search near the surface rather than scanning all 24 sections
-        self._hmap = hmap
+        self._hmap, offset = self._read_nbt(payload, 0)
         # standard world is 384 blocks tall (-64 to 320) = 24 sections
         # section_y 0 corresponds to y=-64, section_y 23 corresponds to y=304
         section_y = 0
@@ -170,17 +167,15 @@ class Chunk:
     to do so, where we recursively build the python dict via a tree structure.
     --------------------------------------------------------------------------------------------
     """
-
     def _read_nbt(self, data, offset):
         tag_type = data[offset]
         offset += 1
-
         if tag_type == TAG_END:
             return None, offset
-
         # skip the name, 2 byte length prefix
         name_length = struct.unpack_from(">H", data, offset)[0]
         offset += 2 + name_length
+
         return self._read_nbt_payload(data, offset, tag_type)
 
     """
@@ -221,7 +216,6 @@ class Chunk:
     recursive tree built dict maps to, and more.
     --------------------------------------------------------------------------------------------
     """
-
     def _read_nbt_payload(self, data, offset, tag_type):
         # base cases
         if tag_type == TAG_BYTE:
@@ -315,7 +309,6 @@ class Chunk:
     the indirection buys you nothing so the server drops it.
     --------------------------------------------------------------------------------------------
     """
-
     def _read_palette(self, payload, offset, bits_per_entry):
         if bits_per_entry >= 15:
             # direct mode -> no palette
@@ -343,16 +336,15 @@ class Chunk:
     see thinking.txt
     --------------------------------------------------------------------------------------------
     """
-
     def get_block(self, x, y, z):
         # world starts at y=-64, section 0 is y=-64 to y=-49
         section_y = (y + 64) >> 4
+
         if section_y not in self._sections:
             return "air"
 
         section = self._sections[section_y]
-
-        # single value section — entire section is one block type
+        # single value section, entire section is one block type
         if section["bits_per_entry"] == 0:
             state_id = section["single_state"]
             return self._state_to_block.get(state_id, "unknown")
@@ -362,6 +354,7 @@ class Chunk:
         lx_check = x & 0xF
         ly_check = y & 0xF
         lz_check = z & 0xF
+
         if (lx_check, ly_check, lz_check) in patched:
             return self._state_to_block.get(patched[(lx_check, ly_check, lz_check)], "unknown")
 
@@ -376,15 +369,12 @@ class Chunk:
         lx = x & 0xF
         ly = y & 0xF
         lz = z & 0xF
-
         # block index within the section
         block_index = (ly * 16 + lz) * 16 + lx
-
         # post-1.16 packing, entries never straddle longs
         blocks_per_long = 64 // bits
         long_index = block_index // blocks_per_long
         bit_offset = (block_index % blocks_per_long) * bits
-
         mask = (1 << bits) - 1
 
         if long_index >= len(longs):
@@ -411,7 +401,6 @@ class Chunk:
     important thing
     --------------------------------------------------------------------------------------------
     """
-
     @staticmethod
     def _read_varint(data, offset):
         result = 0
@@ -448,7 +437,6 @@ class Chunk:
     surface queries. Heightmap is a packed long array indexed by x+z*16.
     --------------------------------------------------------------------------------------------
     """
-
     def get_surface_y(self, x, z):
         lx = x & 0xF
         lz = z & 0xF
